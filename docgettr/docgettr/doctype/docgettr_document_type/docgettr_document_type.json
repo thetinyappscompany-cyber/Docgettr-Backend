@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:slug",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "slug", "catalog_number", "display_name_en", "display_name_hi", "display_name_gu",
+  "category", "sub_category", "privacy_class", "has_expiry", "expiry_field_key",
+  "fields_schema_json", "validation_rules_json", "ai_prompt_hints_json",
+  "file_naming_template", "icon_lucide", "issuer_portal_url"
+ ],
+ "fields": [
+  {"fieldname": "slug", "label": "Slug (Name)", "fieldtype": "Data", "reqd": 1, "unique": 1},
+  {"fieldname": "catalog_number", "label": "Catalog Number", "fieldtype": "Int", "reqd": 1, "unique": 1},
+  {"fieldname": "display_name_en", "label": "Display Name (EN)", "fieldtype": "Data", "reqd": 1},
+  {"fieldname": "display_name_hi", "label": "Display Name (HI)", "fieldtype": "Data"},
+  {"fieldname": "display_name_gu", "label": "Display Name (GU)", "fieldtype": "Data"},
+  {"fieldname": "category", "label": "Category", "fieldtype": "Link", "options": "Docgettr Category", "reqd": 1},
+  {"fieldname": "sub_category", "label": "Sub Category", "fieldtype": "Data"},
+  {"fieldname": "privacy_class", "label": "Privacy Class", "fieldtype": "Select", "options": "low\nnormal\nsensitive\nhighly_sensitive", "default": "normal", "reqd": 1},
+  {"fieldname": "has_expiry", "label": "Has Expiry", "fieldtype": "Check", "default": "0"},
+  {"fieldname": "expiry_field_key", "label": "Expiry Field Key", "fieldtype": "Data"},
+  {"fieldname": "fields_schema_json", "label": "Fields Schema (JSON)", "fieldtype": "JSON", "reqd": 1},
+  {"fieldname": "validation_rules_json", "label": "Validation Rules (JSON)", "fieldtype": "JSON"},
+  {"fieldname": "ai_prompt_hints_json", "label": "AI Prompt Hints (JSON)", "fieldtype": "JSON"},
+  {"fieldname": "file_naming_template", "label": "Filename Template", "fieldtype": "Data"},
+  {"fieldname": "icon_lucide", "label": "Lucide Icon", "fieldtype": "Data"},
+  {"fieldname": "issuer_portal_url", "label": "Issuer Portal URL", "fieldtype": "Data"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Document Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 0, "create": 0, "delete": 0},
+  {"role": "Guest", "read": 1}
+ ],
+ "sort_field": "catalog_number",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0
+}

@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "autoname": "",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document", "token", "created_by", "expires_at", "password_hash",
+  "watermark_enabled", "max_views", "view_count", "status", "recipient_label"
+ ],
+ "fields": [
+  {"fieldname": "document", "label": "Document", "fieldtype": "Link", "options": "Docgettr Document", "reqd": 1},
+  {"fieldname": "token", "label": "Token", "fieldtype": "Data", "reqd": 1, "unique": 1, "read_only": 1},
+  {"fieldname": "created_by", "label": "Created By", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "expires_at", "label": "Expires At", "fieldtype": "Datetime", "reqd": 1},
+  {"fieldname": "password_hash", "label": "Password Hash", "fieldtype": "Password"},
+  {"fieldname": "watermark_enabled", "label": "Watermark", "fieldtype": "Check", "default": "1"},
+  {"fieldname": "max_views", "label": "Max Views", "fieldtype": "Int"},
+  {"fieldname": "view_count", "label": "View Count", "fieldtype": "Int", "default": "0"},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Active\nRevoked\nExpired", "default": "Active", "reqd": 1},
+  {"fieldname": "recipient_label", "label": "Recipient Label", "fieldtype": "Data"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Share Link",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

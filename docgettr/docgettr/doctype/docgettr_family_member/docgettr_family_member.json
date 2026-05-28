@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "autoname": "",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "family", "user", "kind", "role", "display_name",
+  "relationship", "avatar_seed", "dob", "notes"
+ ],
+ "fields": [
+  {"fieldname": "family", "label": "Family", "fieldtype": "Link", "options": "Docgettr Family", "reqd": 1},
+  {"fieldname": "user", "label": "User", "fieldtype": "Link", "options": "Docgettr User"},
+  {"fieldname": "kind", "label": "Kind", "fieldtype": "Select", "options": "Linked\nManaged", "reqd": 1, "default": "Managed"},
+  {"fieldname": "role", "label": "Role", "fieldtype": "Select", "options": "Admin\nEditor\nViewer", "reqd": 1, "default": "Viewer"},
+  {"fieldname": "display_name", "label": "Display Name", "fieldtype": "Data", "reqd": 1},
+  {"fieldname": "relationship", "label": "Relationship", "fieldtype": "Data"},
+  {"fieldname": "avatar_seed", "label": "Avatar Seed", "fieldtype": "Data"},
+  {"fieldname": "dob", "label": "Date of Birth", "fieldtype": "Date"},
+  {"fieldname": "notes", "label": "Notes", "fieldtype": "Small Text"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Family Member",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["user", "purpose", "status", "granted_at", "revoked_at", "notice_version"],
+ "fields": [
+  {"fieldname": "user", "label": "User", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "purpose", "label": "Purpose", "fieldtype": "Select", "options": "AiProcessing\nOcrMetadataStorage\nTelemetry\nEmailTransactional\nSmsTransactional\nMarketing", "reqd": 1},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Granted\nRevoked", "reqd": 1, "default": "Granted"},
+  {"fieldname": "granted_at", "label": "Granted At", "fieldtype": "Datetime"},
+  {"fieldname": "revoked_at", "label": "Revoked At", "fieldtype": "Datetime"},
+  {"fieldname": "notice_version", "label": "Notice Version", "fieldtype": "Data"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Consent Record",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 0, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

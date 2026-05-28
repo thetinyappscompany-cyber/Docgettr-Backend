@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["user", "label", "icon_lucide", "filter_json", "display_order", "is_system"],
+ "fields": [
+  {"fieldname": "user", "label": "User", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "label", "label": "Label", "fieldtype": "Data", "reqd": 1},
+  {"fieldname": "icon_lucide", "label": "Lucide Icon", "fieldtype": "Data"},
+  {"fieldname": "filter_json", "label": "Filter (JSON)", "fieldtype": "JSON", "reqd": 1},
+  {"fieldname": "display_order", "label": "Display Order", "fieldtype": "Int", "default": "0"},
+  {"fieldname": "is_system", "label": "System", "fieldtype": "Check", "default": "0"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Smart Folder",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1, "if_owner": 1}
+ ],
+ "sort_field": "display_order",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0
+}

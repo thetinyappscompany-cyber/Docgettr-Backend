@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document", "version_no", "display_filename", "mime_type",
+  "file_size_bytes", "file_attachment", "replaced_at", "replaced_by"
+ ],
+ "fields": [
+  {"fieldname": "document", "label": "Document", "fieldtype": "Link", "options": "Docgettr Document", "reqd": 1},
+  {"fieldname": "version_no", "label": "Version No", "fieldtype": "Int", "reqd": 1},
+  {"fieldname": "display_filename", "label": "Display Filename", "fieldtype": "Data"},
+  {"fieldname": "mime_type", "label": "MIME Type", "fieldtype": "Data"},
+  {"fieldname": "file_size_bytes", "label": "File Size (bytes)", "fieldtype": "Int"},
+  {"fieldname": "file_attachment", "label": "File", "fieldtype": "Attach"},
+  {"fieldname": "replaced_at", "label": "Replaced At", "fieldtype": "Datetime", "reqd": 1},
+  {"fieldname": "replaced_by", "label": "Replaced By", "fieldtype": "Link", "options": "Docgettr User"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Document Version",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 0, "create": 1, "delete": 0}
+ ],
+ "sort_field": "replaced_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

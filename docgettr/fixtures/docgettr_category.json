@@ -1,0 +1,102 @@
+[
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_identification",
+  "slug": "cat_identification",
+  "display_label": "Identification",
+  "display_order": 1,
+  "icon_lucide": "id-card",
+  "color_hex": "#3B82F6",
+  "description": "Aadhaar, PAN, Voter ID, Passport, Driving License and other identity documents"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_education",
+  "slug": "cat_education",
+  "display_label": "Education",
+  "display_order": 2,
+  "icon_lucide": "graduation-cap",
+  "color_hex": "#10B981",
+  "description": "Marksheets, degrees, certificates and other educational records"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_employment",
+  "slug": "cat_employment",
+  "display_label": "Employment",
+  "display_order": 3,
+  "icon_lucide": "briefcase",
+  "color_hex": "#F59E0B",
+  "description": "Offer letters, pay slips, Form 16 and other employment records"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_financial",
+  "slug": "cat_financial",
+  "display_label": "Financial",
+  "display_order": 4,
+  "icon_lucide": "wallet",
+  "color_hex": "#8B5CF6",
+  "description": "Bank statements, FD receipts, insurance and tax documents"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_utility",
+  "slug": "cat_utility",
+  "display_label": "Utility",
+  "display_order": 5,
+  "icon_lucide": "zap",
+  "color_hex": "#EAB308",
+  "description": "Electricity, water, gas, internet and other utility bills"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_government",
+  "slug": "cat_government",
+  "display_label": "Government",
+  "display_order": 6,
+  "icon_lucide": "landmark",
+  "color_hex": "#EF4444",
+  "description": "Ration card, caste certificate, domicile and other government documents"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_legal",
+  "slug": "cat_legal",
+  "display_label": "Legal",
+  "display_order": 7,
+  "icon_lucide": "scale",
+  "color_hex": "#475569",
+  "description": "Property deeds, agreements, court orders and other legal documents"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_medical",
+  "slug": "cat_medical",
+  "display_label": "Medical",
+  "display_order": 8,
+  "icon_lucide": "heart-pulse",
+  "color_hex": "#EC4899",
+  "description": "Prescriptions, lab reports, discharge summaries and other medical records"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_assets",
+  "slug": "cat_assets",
+  "display_label": "Assets",
+  "display_order": 9,
+  "icon_lucide": "home",
+  "color_hex": "#0EA5E9",
+  "description": "Property, vehicles, gold receipts and other asset documents"
+ },
+ {
+  "doctype": "Docgettr Category",
+  "name": "cat_other",
+  "slug": "cat_other",
+  "display_label": "Other",
+  "display_order": 10,
+  "icon_lucide": "folder",
+  "color_hex": "#6B7280",
+  "description": "Miscellaneous documents"
+ }
+]

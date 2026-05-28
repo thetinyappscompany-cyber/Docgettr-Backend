@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "autoname": "",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["family_name", "keeper_user", "cover_emoji"],
+ "fields": [
+  {"fieldname": "family_name", "label": "Family Name", "fieldtype": "Data", "reqd": 1},
+  {"fieldname": "keeper_user", "label": "Keeper", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "cover_emoji", "label": "Cover Emoji", "fieldtype": "Data"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Family",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

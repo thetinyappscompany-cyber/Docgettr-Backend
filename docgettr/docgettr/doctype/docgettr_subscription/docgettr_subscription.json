@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "autoname": "field:user",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user", "tier", "billing_cycle", "started_at", "current_period_end",
+  "status", "razorpay_subscription_id", "razorpay_order_id",
+  "addon_storage_gb", "ai_scans_used_this_month", "last_reset_month"
+ ],
+ "fields": [
+  {"fieldname": "user", "label": "User", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1, "unique": 1},
+  {"fieldname": "tier", "label": "Tier", "fieldtype": "Select", "options": "Free\nPremiumIndividual\nPremiumFamily", "default": "Free", "reqd": 1},
+  {"fieldname": "billing_cycle", "label": "Billing Cycle", "fieldtype": "Select", "options": "Monthly\nAnnual\nNone", "default": "None", "reqd": 1},
+  {"fieldname": "started_at", "label": "Started At", "fieldtype": "Datetime", "reqd": 1},
+  {"fieldname": "current_period_end", "label": "Current Period End", "fieldtype": "Datetime"},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Active\nPastDue\nCancelled\nPaused", "default": "Active", "reqd": 1},
+  {"fieldname": "razorpay_subscription_id", "label": "Razorpay Subscription ID", "fieldtype": "Data"},
+  {"fieldname": "razorpay_order_id", "label": "Razorpay Order ID", "fieldtype": "Data"},
+  {"fieldname": "addon_storage_gb", "label": "Addon Storage (GB)", "fieldtype": "Int", "default": "0"},
+  {"fieldname": "ai_scans_used_this_month", "label": "AI Scans (This Month)", "fieldtype": "Int", "default": "0"},
+  {"fieldname": "last_reset_month", "label": "Last Reset Month (MM-YYYY)", "fieldtype": "Data"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Subscription",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 0, "create": 0, "delete": 0, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

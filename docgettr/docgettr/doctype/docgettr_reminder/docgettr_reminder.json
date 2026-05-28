@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "autoname": "",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document", "owner_user", "kind", "fire_at", "offset_days",
+  "channel_email", "channel_push", "channel_sms",
+  "status", "snoozed_until", "title", "body"
+ ],
+ "fields": [
+  {"fieldname": "document", "label": "Document", "fieldtype": "Link", "options": "Docgettr Document", "reqd": 1},
+  {"fieldname": "owner_user", "label": "Owner User", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "kind", "label": "Kind", "fieldtype": "Select", "options": "Expiry\nCustom", "default": "Custom", "reqd": 1},
+  {"fieldname": "fire_at", "label": "Fire At", "fieldtype": "Datetime", "reqd": 1},
+  {"fieldname": "offset_days", "label": "Offset Days", "fieldtype": "Int"},
+  {"fieldname": "channel_email", "label": "Email", "fieldtype": "Check", "default": "1"},
+  {"fieldname": "channel_push", "label": "Push", "fieldtype": "Check", "default": "1"},
+  {"fieldname": "channel_sms", "label": "SMS", "fieldtype": "Check", "default": "0"},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Pending\nFired\nSnoozed\nCompleted\nDismissed", "default": "Pending", "reqd": 1},
+  {"fieldname": "snoozed_until", "label": "Snoozed Until", "fieldtype": "Datetime"},
+  {"fieldname": "title", "label": "Title", "fieldtype": "Data", "reqd": 1},
+  {"fieldname": "body", "label": "Body", "fieldtype": "Small Text"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Reminder",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "fire_at",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0
+}

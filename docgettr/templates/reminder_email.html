@@ -1,0 +1,16 @@
+<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+    <h2 style="color: #111; margin-top: 0;">{{ title }}</h2>
+    {% if body %}
+    <p style="color: #444; line-height: 1.6;">{{ body }}</p>
+    {% endif %}
+    {% if document %}
+    <p style="color: #666; font-size: 14px;">
+        Related document: <code>{{ document }}</code>
+    </p>
+    {% endif %}
+    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+    <p style="color: #999; font-size: 12px;">
+        You're receiving this because you set a reminder in Docgettr.
+        Manage your reminders in the app.
+    </p>
+</div>

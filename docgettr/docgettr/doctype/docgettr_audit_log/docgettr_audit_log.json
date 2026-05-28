@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["actor", "action", "target_kind", "target", "ts", "context_json"],
+ "fields": [
+  {"fieldname": "actor", "label": "Actor", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "action", "label": "Action", "fieldtype": "Select", "options": "DocumentUploaded\nDocumentViewed\nDocumentShared\nDocumentEdited\nDocumentReplaced\nDocumentSoftDeleted\nDocumentRestored\nDocumentPermanentlyDeleted\nShareCreated\nShareRevoked\nShareAccessed\nFamilyMemberAdded\nFamilyMemberRemoved\nPermissionGranted\nPermissionDenied\nPermissionRequested\nTierChanged\nDriveConnected\nDriveDisconnected\nDriveSynced\nConsentGranted\nConsentRevoked\nAccountExported\nAccountDeletionRequested\nAccountDeletionCancelled\nAccountWiped\nAiScanInvoked\nReminderFired\nReminderCompleted\nReminderSnoozed", "reqd": 1},
+  {"fieldname": "target_kind", "label": "Target Kind", "fieldtype": "Data"},
+  {"fieldname": "target", "label": "Target", "fieldtype": "Data"},
+  {"fieldname": "ts", "label": "Timestamp", "fieldtype": "Datetime", "reqd": 1},
+  {"fieldname": "context_json", "label": "Context (JSON)", "fieldtype": "JSON"}
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Audit Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 0, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 0, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 0, "create": 0, "delete": 0, "if_owner": 1}
+ ],
+ "sort_field": "ts",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

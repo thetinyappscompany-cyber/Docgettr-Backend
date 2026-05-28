@@ -1,0 +1,23 @@
+[project]
+name = "docgettr"
+authors = [
+    { name = "The Tiny App Company", email = "Apps@thetinyappscompany.com" }
+]
+description = "Family document management for Indian households"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "google-generativeai>=0.8.0",
+    "razorpay>=1.4.0",
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-api-python-client>=2.0.0",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "docgettr"
