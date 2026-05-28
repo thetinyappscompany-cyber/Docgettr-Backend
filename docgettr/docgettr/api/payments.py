@@ -6,22 +6,18 @@ from docgettr.docgettr.utils.permissions import (
     require_current_docgettr_user,
     append_audit,
 )
-
-
-PRICING = {
-    ("PremiumIndividual", "Monthly"): 4900,
-    ("PremiumIndividual", "Annual"): 29900,
-    ("PremiumFamily", "Monthly"): 9900,
-    ("PremiumFamily", "Annual"): 59900,
-}
+from docgettr.docgettr.utils import settings as _settings
 
 
 def _razorpay_client():
     import razorpay
-    key_id = frappe.conf.get("razorpay_key_id")
-    key_secret = frappe.conf.get("razorpay_key_secret")
+    key_id = _settings.get("razorpay_key_id")
+    key_secret = _settings.get("razorpay_key_secret")
     if not key_id or not key_secret:
-        frappe.throw("Razorpay is not configured on the server.")
+        frappe.throw(
+            "Razorpay is not configured. Set keys in Docgettr Settings "
+            "or via bench set-config razorpay_key_id / razorpay_key_secret.",
+        )
     return razorpay.Client(auth=(key_id, key_secret))
 
 
@@ -36,9 +32,9 @@ def _calculate_period_end(cycle: str):
 @frappe.whitelist()
 def create_order(tier, billing_cycle):
     user = require_current_docgettr_user()
-    amount = PRICING.get((tier, billing_cycle))
+    amount = _settings.get_price_paise(tier, billing_cycle)
     if not amount:
-        frappe.throw("Invalid tier/cycle combination")
+        frappe.throw("Invalid tier/cycle combination, or price not configured.")
 
     client = _razorpay_client()
     order = client.order.create({
@@ -55,7 +51,7 @@ def create_order(tier, billing_cycle):
         "order_id": order["id"],
         "amount": amount,
         "currency": "INR",
-        "key_id": frappe.conf.get("razorpay_key_id"),
+        "key_id": _settings.get("razorpay_key_id"),
     }
 
 
@@ -106,7 +102,7 @@ def razorpay_webhook():
     import hashlib
 
     body = frappe.request.get_data(as_text=True)
-    secret = frappe.conf.get("razorpay_webhook_secret")
+    secret = _settings.get("razorpay_webhook_secret")
     if not secret:
         frappe.throw("Webhook secret not configured", frappe.AuthenticationError)
 

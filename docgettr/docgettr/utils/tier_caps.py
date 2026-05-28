@@ -1,6 +1,13 @@
+"""Tier-cap enforcement. Caps come from Docgettr Settings (Singleton),
+with hardcoded defaults as the ultimate fallback."""
+
 import frappe
 
+from docgettr.docgettr.utils import settings as _settings
 
+
+# Legacy hardcoded defaults — kept for code that imports TIER_CAPS directly.
+# The runtime helpers below read live values from the Settings Singleton.
 TIER_CAPS = {
     "Free": {
         "max_documents": 50,
@@ -27,7 +34,11 @@ TIER_CAPS = {
 
 
 def get_tier_caps(tier: str) -> dict:
-    return TIER_CAPS.get(tier, TIER_CAPS["Free"])
+    """Live caps from Settings; falls back to TIER_CAPS dict if anything blows up."""
+    try:
+        return _settings.get_tier_caps(tier)
+    except Exception:
+        return TIER_CAPS.get(tier, TIER_CAPS["Free"])
 
 
 def get_document_count(user_name: str) -> int:

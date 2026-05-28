@@ -12,6 +12,7 @@ from docgettr.docgettr.utils.permissions import (
     require_current_docgettr_user,
     append_audit,
 )
+from docgettr.docgettr.utils import settings as _settings
 
 
 GOOGLE_DRIVE_SCOPES = [
@@ -19,7 +20,9 @@ GOOGLE_DRIVE_SCOPES = [
     "https://www.googleapis.com/auth/drive.metadata.readonly",
 ]
 
-ROOT_FOLDER_NAME = "Docgettr"
+
+def _root_folder_name() -> str:
+    return _settings.get("drive_root_folder_name") or "Docgettr"
 
 
 # ---------------------------------------------------------------------------
@@ -27,11 +30,14 @@ ROOT_FOLDER_NAME = "Docgettr"
 # ---------------------------------------------------------------------------
 
 def _client_config():
-    client_id = frappe.conf.get("google_client_id")
-    client_secret = frappe.conf.get("google_client_secret")
-    redirect_uri = frappe.conf.get("google_redirect_uri")
+    client_id = _settings.get("google_client_id")
+    client_secret = _settings.get("google_client_secret")
+    redirect_uri = _settings.get("google_redirect_uri")
     if not (client_id and client_secret and redirect_uri):
-        frappe.throw("Google Drive integration is not configured on the server.")
+        frappe.throw(
+            "Google Drive is not configured. Set google_client_id / _secret / _redirect_uri "
+            "in Docgettr Settings.",
+        )
     return {
         "web": {
             "client_id": client_id,
@@ -53,8 +59,8 @@ def _get_drive_service(user):
     if not access:
         frappe.throw("Google Drive is not connected for this user.")
 
-    client_id = frappe.conf.get("google_client_id")
-    client_secret = frappe.conf.get("google_client_secret")
+    client_id = _settings.get("google_client_id")
+    client_secret = _settings.get("google_client_secret")
 
     creds = Credentials(
         token=access,
@@ -101,7 +107,7 @@ def get_auth_url():
     from google_auth_oauthlib.flow import Flow
     user = require_current_docgettr_user()
     flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
-    flow.redirect_uri = frappe.conf.get("google_redirect_uri")
+    flow.redirect_uri = _settings.get("google_redirect_uri")
     auth_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
@@ -120,7 +126,7 @@ def handle_callback(code, state):
         frappe.throw("OAuth state mismatch", frappe.AuthenticationError)
 
     flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
-    flow.redirect_uri = frappe.conf.get("google_redirect_uri")
+    flow.redirect_uri = _settings.get("google_redirect_uri")
     flow.fetch_token(code=code)
     creds = flow.credentials
 
@@ -134,7 +140,7 @@ def handle_callback(code, state):
     # Bootstrap the Docgettr root folder so subsequent syncs are fast
     try:
         service = _get_drive_service(user)
-        root_id = _ensure_folder(service, ROOT_FOLDER_NAME)
+        root_id = _ensure_folder(service, _root_folder_name())
         user.drive_root_folder_id = root_id
         user.save(ignore_permissions=True)
     except Exception:
@@ -167,7 +173,7 @@ def sync_document(document_name):
         frappe.throw("Not authorized", frappe.PermissionError)
 
     service = _get_drive_service(user)
-    root_id = user.drive_root_folder_id or _ensure_folder(service, ROOT_FOLDER_NAME)
+    root_id = user.drive_root_folder_id or _ensure_folder(service, _root_folder_name())
 
     # Folder structure: /Docgettr/{MemberName or "Personal"}/{Category}/
     member_name = "Personal"

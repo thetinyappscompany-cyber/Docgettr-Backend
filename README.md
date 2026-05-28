@@ -34,9 +34,16 @@ bench --site <your-site> import-fixtures
 
 `import-fixtures` seeds the 10 categories and 100 document types.
 
-## Required `site_config.json` keys
+## Configuration
 
-Set these via `bench --site <site> set-config <key> "<value>"`:
+**Preferred: Docgettr Settings (Desk UI).** After install, open
+`Desk → Docgettr → Docgettr Settings` (Singleton) and fill in API keys,
+tier caps, pricing, and lifecycle knobs. Defaults are pre-filled.
+
+**Fallback: `site_config.json`.** Every Settings field is also read from
+`frappe.conf` if the Settings field is blank, so existing `bench set-config`
+deployments keep working. Set via
+`bench --site <site> set-config <key> "<value>"`.
 
 | Key                          | Purpose                                            |
 |------------------------------|----------------------------------------------------|
@@ -49,6 +56,17 @@ Set these via `bench --site <site> set-config <key> "<value>"`:
 | `google_client_id`           | Google OAuth client ID (Drive)                     |
 | `google_client_secret`       | Google OAuth client secret                         |
 | `google_redirect_uri`        | `https://<your-site>/api/method/docgettr.docgettr.api.drive.handle_callback` |
+
+The Settings Singleton also exposes:
+
+- **Pricing** — Razorpay amounts in paise for each (tier, cycle)
+- **Tier caps** — per-tier limits on documents, storage, AI scans,
+  family members, share-link expiry
+- **Lifecycle** — trash purge window (default 30 days), DPDP deletion
+  grace (default 7 days), storage-warning threshold (default 85%)
+- **AI** — classification confidence threshold (default 0.65),
+  primary/fallback model names
+- **Drive** — root folder name (default `Docgettr`)
 
 You'll also want to relax CORS so the Next.js frontend can reach the API:
 

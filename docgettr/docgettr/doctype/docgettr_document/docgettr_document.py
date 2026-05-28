@@ -7,6 +7,7 @@ from docgettr.docgettr.utils.tier_caps import (
     enforce_storage_cap,
 )
 from docgettr.docgettr.utils.permissions import append_audit
+from docgettr.docgettr.utils import settings as _settings
 
 
 class DocgettrDocument(Document):
@@ -46,12 +47,13 @@ class DocgettrDocument(Document):
     def _create_trash_item(self):
         if frappe.db.exists("Docgettr Trash Item", {"original_doc": self.name}):
             return
+        purge_days = _settings.get_int("trash_purge_days", 30)
         frappe.get_doc({
             "doctype": "Docgettr Trash Item",
             "original_doc": self.name,
             "deleted_by": self.uploaded_by,
             "deleted_ts": frappe.utils.now_datetime(),
-            "auto_purge_at": frappe.utils.add_days(frappe.utils.now_datetime(), 30),
+            "auto_purge_at": frappe.utils.add_days(frappe.utils.now_datetime(), purge_days),
             "reason": "Manual delete",
         }).insert(ignore_permissions=True)
         append_audit(self.uploaded_by, "DocumentSoftDeleted", "Docgettr Document", self.name)

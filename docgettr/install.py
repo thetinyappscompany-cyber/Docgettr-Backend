@@ -1,9 +1,12 @@
 import frappe
 
+from docgettr.docgettr.utils import settings as _settings
+
 
 def after_install():
     """Run after `bench install-app docgettr` on a site."""
     create_roles()
+    _settings.ensure_defaults()
     frappe.db.commit()
 
 

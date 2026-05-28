@@ -22,9 +22,7 @@ from docgettr.docgettr.utils.validators import (
     parse_indian_date,
     render_filename_template,
 )
-
-
-CLASSIFY_CONFIDENCE_THRESHOLD = 0.65
+from docgettr.docgettr.utils import settings as _settings
 
 
 # ---------------------------------------------------------------------------
@@ -77,15 +75,14 @@ def _get_file_bytes(file_url: str):
 
 def _gemini_model(model_name: str = None):
     import google.generativeai as genai
-    api_key = frappe.conf.get("gemini_api_key")
+    api_key = _settings.get("gemini_api_key")
     if not api_key:
-        frappe.throw("Server is missing gemini_api_key in site_config.")
+        frappe.throw(
+            "Gemini API key is not set. Configure it in Docgettr Settings "
+            "(Desk → Docgettr Settings) or via bench set-config gemini_api_key.",
+        )
     genai.configure(api_key=api_key)
-    model = (
-        model_name
-        or frappe.conf.get("gemini_model_primary")
-        or "gemini-2.0-flash"
-    )
+    model = model_name or _settings.get("gemini_model_primary")
     return genai.GenerativeModel(model)
 
 
@@ -158,7 +155,8 @@ def classify(document_name):
     per_field_conf = {}
 
     # ---- Phase 2: extraction (only if confident) ----
-    if doc.ai_confidence_overall >= CLASSIFY_CONFIDENCE_THRESHOLD and doc.document_type:
+    threshold = _settings.get_float("ai_confidence_threshold", 0.65)
+    if doc.ai_confidence_overall >= threshold and doc.document_type:
         doc_type = frappe.get_doc("Docgettr Document Type", doc.document_type)
         extract_prompt = build_extraction_prompt(doc_type)
         try:

@@ -11,6 +11,7 @@ from docgettr.docgettr.utils.permissions import (
     require_current_docgettr_user,
     append_audit,
 )
+from docgettr.docgettr.utils import settings as _settings
 
 
 @frappe.whitelist()
@@ -126,8 +127,9 @@ def export_all():
 @frappe.whitelist()
 def request_deletion():
     user = require_current_docgettr_user()
+    grace_days = _settings.get_int("account_deletion_grace_days", 7)
     user.deletion_requested_at = frappe.utils.now_datetime()
-    user.auto_wipe_at = frappe.utils.add_days(frappe.utils.now_datetime(), 7)
+    user.auto_wipe_at = frappe.utils.add_days(frappe.utils.now_datetime(), grace_days)
     user.save(ignore_permissions=True)
     append_audit(user.name, "AccountDeletionRequested", "Docgettr User", user.name)
 

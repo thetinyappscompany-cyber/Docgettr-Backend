@@ -6,6 +6,7 @@ Each function is idempotent — safe to retry.
 import frappe
 
 from docgettr.docgettr.utils.permissions import append_audit
+from docgettr.docgettr.utils import settings as _settings
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +164,8 @@ def send_storage_warnings():
             if max_bytes <= 0:
                 continue
             ratio = used / max_bytes
-            if ratio >= 0.85 and u.get("user"):
+            threshold = _settings.get_int("storage_warning_threshold_pct", 85) / 100.0
+            if ratio >= threshold and u.get("user"):
                 pct = round(ratio * 100, 1)
                 frappe.sendmail(
                     recipients=[u["user"]],
