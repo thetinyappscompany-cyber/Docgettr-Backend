@@ -89,7 +89,12 @@ def get_current_user():
         return {"user": None}
     sub_name = frappe.db.get_value("Docgettr Subscription", {"user": user.name}, "name")
     sub = frappe.get_doc("Docgettr Subscription", sub_name).as_dict() if sub_name else None
-    return {"user": user.as_dict(), "subscription": sub}
+    user_dict = user.as_dict()
+    # Surface Drive connection state without ever exposing the tokens themselves.
+    user_dict["drive_connected"] = bool(
+        user.get_password("drive_access_token", raise_exception=False)
+    )
+    return {"user": user_dict, "subscription": sub}
 
 
 @frappe.whitelist()

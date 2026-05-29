@@ -26,6 +26,9 @@ DEFAULTS = {
     "ai_confidence_threshold": 0.65,
     "drive_root_folder_name": "Docgettr",
 
+    # Frontend (Next.js) base URL — used for post-OAuth browser redirects.
+    "app_url": "https://docgettr.com",
+
     # Pricing (paise)
     "price_individual_monthly_paise": 4900,
     "price_individual_annual_paise": 29900,
