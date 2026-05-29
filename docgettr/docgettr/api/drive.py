@@ -3,8 +3,12 @@
 OAuth tokens are stored encrypted on Docgettr User (Password fields).
 """
 
+import base64
+import hashlib
+import hmac
 import io
 import json
+import time
 
 import frappe
 
@@ -34,29 +38,56 @@ def _root_folder_name() -> str:
 # The OAuth callback returns from Google as a top-level browser navigation to
 # the Frappe domain with NO Docgettr session cookie. We therefore identify the
 # user from the `state` param. To stop an attacker forging a `state` for someone
-# else's account, `state` is an itsdangerous-signed, time-limited token rather
-# than the bare user name.
+# else's account, `state` is an HMAC-signed, time-limited token rather than the
+# bare user name. We sign with the stdlib (hmac/hashlib) so we don't depend on
+# any package outside Frappe's runtime.
+#
+# Token format:  <b64url(payload)>.<b64url(issued_ts)>.<b64url(sig)>
+# where sig = HMAC-SHA256(secret, "<payload>.<issued_ts>").
 
-def _state_serializer():
-    from itsdangerous import URLSafeTimedSerializer
+_STATE_SALT = b"docgettr-drive-oauth"
+
+
+def _state_secret() -> bytes:
     from frappe.utils.password import get_encryption_key
 
-    return URLSafeTimedSerializer(get_encryption_key(), salt="docgettr-drive-oauth")
+    key = get_encryption_key()
+    if isinstance(key, str):
+        key = key.encode()
+    # Bind the signing key to this purpose so a token can't be reused elsewhere.
+    return hashlib.sha256(_STATE_SALT + b"\x00" + key).digest()
+
+
+def _b64e(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+
+def _b64d(data: str) -> bytes:
+    pad = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + pad)
 
 
 def _make_state(user_name: str) -> str:
-    return _state_serializer().dumps(user_name)
+    body = f"{_b64e(user_name.encode())}.{_b64e(str(int(time.time())).encode())}"
+    sig = hmac.new(_state_secret(), body.encode(), hashlib.sha256).digest()
+    return f"{body}.{_b64e(sig)}"
 
 
 def _user_from_state(state: str):
     """Resolve and validate the Docgettr User encoded in a signed `state`."""
-    from itsdangerous import BadSignature, SignatureExpired
-
     if not state:
         frappe.throw("Missing OAuth state", frappe.AuthenticationError)
     try:
-        user_name = _state_serializer().loads(state, max_age=_STATE_MAX_AGE)
-    except (BadSignature, SignatureExpired):
+        payload_b64, ts_b64, sig_b64 = state.split(".")
+        body = f"{payload_b64}.{ts_b64}"
+        expected = hmac.new(_state_secret(), body.encode(), hashlib.sha256).digest()
+        if not hmac.compare_digest(expected, _b64d(sig_b64)):
+            raise ValueError("bad signature")
+        issued_at = int(_b64d(ts_b64).decode())
+        if int(time.time()) - issued_at > _STATE_MAX_AGE:
+            raise ValueError("expired")
+        user_name = _b64d(payload_b64).decode()
+    except Exception:
         frappe.throw("Invalid or expired OAuth state", frappe.AuthenticationError)
     if not user_name or not frappe.db.exists("Docgettr User", user_name):
         frappe.throw("Unknown Docgettr User in OAuth state", frappe.AuthenticationError)
