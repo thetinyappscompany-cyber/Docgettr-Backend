@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "autoname": "",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "family", "inviter", "invited_user", "role", "display_name", "status", "responded_at"
+ ],
+ "fields": [
+  {"fieldname": "family", "label": "Family", "fieldtype": "Link", "options": "Docgettr Family", "reqd": 1},
+  {"fieldname": "inviter", "label": "Inviter", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "invited_user", "label": "Invited User", "fieldtype": "Link", "options": "Docgettr User", "reqd": 1},
+  {"fieldname": "role", "label": "Role", "fieldtype": "Select", "options": "Admin\nEditor\nViewer", "reqd": 1, "default": "Editor"},
+  {"fieldname": "display_name", "label": "Display Name", "fieldtype": "Data"},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Pending\nAccepted\nDeclined\nRevoked", "reqd": 1, "default": "Pending"},
+  {"fieldname": "responded_at", "label": "Responded At", "fieldtype": "Datetime"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr Family Invite",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr Admin", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Docgettr User", "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
