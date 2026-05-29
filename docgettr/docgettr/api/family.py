@@ -106,12 +106,48 @@ def get_member(member_id):
 
 
 @frappe.whitelist()
+def find_user_by_email(email):
+    """Resolve a single Docgettr user by their *exact* email, for family invites.
+
+    Deliberately an exact-match lookup (never a list or prefix search) so the
+    user base cannot be enumerated: the caller must already know the address of
+    the person they want to add. Requires an authenticated Docgettr user and
+    returns only the minimal fields needed to render and link a member.
+    """
+    require_current_docgettr_user()
+    email = (email or "").strip().lower()
+    if not email:
+        return {"user": None}
+    row = frappe.db.get_value(
+        "Docgettr User",
+        {"user": email},
+        ["name", "display_name", "avatar_seed", "user"],
+        as_dict=True,
+    )
+    if not row:
+        return {"user": None}
+    return {"user": {
+        "name": row.name,
+        "display_name": row.display_name,
+        "avatar_seed": row.avatar_seed,
+        "email": row.user,
+    }}
+
+
+@frappe.whitelist()
 def add_member(family, kind, role, display_name, user=None,
                relationship=None, avatar_seed=None, dob=None, notes=None):
     actor = require_current_docgettr_user()
     if not _is_family_admin(actor.name, family) and \
             actor.name != frappe.db.get_value("Docgettr Family", family, "keeper_user"):
         frappe.throw("Only family admins can add members", frappe.PermissionError)
+
+    # A Linked member maps to a real account; don't let the same account be
+    # added to one family twice.
+    if kind == "Linked" and user and frappe.db.exists(
+        "Docgettr Family Member", {"family": family, "user": user}
+    ):
+        frappe.throw("That person is already a member of this family.")
 
     member = frappe.get_doc({
         "doctype": "Docgettr Family Member",
