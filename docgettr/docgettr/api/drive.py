@@ -20,9 +20,57 @@ GOOGLE_DRIVE_SCOPES = [
     "https://www.googleapis.com/auth/drive.metadata.readonly",
 ]
 
+# How long a signed OAuth `state` value stays valid (seconds).
+_STATE_MAX_AGE = 600
+
 
 def _root_folder_name() -> str:
     return _settings.get("drive_root_folder_name") or "Docgettr"
+
+
+# ---------------------------------------------------------------------------
+# OAuth state signing + post-callback redirect helpers
+# ---------------------------------------------------------------------------
+# The OAuth callback returns from Google as a top-level browser navigation to
+# the Frappe domain with NO Docgettr session cookie. We therefore identify the
+# user from the `state` param. To stop an attacker forging a `state` for someone
+# else's account, `state` is an itsdangerous-signed, time-limited token rather
+# than the bare user name.
+
+def _state_serializer():
+    from itsdangerous import URLSafeTimedSerializer
+    from frappe.utils.password import get_encryption_key
+
+    return URLSafeTimedSerializer(get_encryption_key(), salt="docgettr-drive-oauth")
+
+
+def _make_state(user_name: str) -> str:
+    return _state_serializer().dumps(user_name)
+
+
+def _user_from_state(state: str):
+    """Resolve and validate the Docgettr User encoded in a signed `state`."""
+    from itsdangerous import BadSignature, SignatureExpired
+
+    if not state:
+        frappe.throw("Missing OAuth state", frappe.AuthenticationError)
+    try:
+        user_name = _state_serializer().loads(state, max_age=_STATE_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        frappe.throw("Invalid or expired OAuth state", frappe.AuthenticationError)
+    if not user_name or not frappe.db.exists("Docgettr User", user_name):
+        frappe.throw("Unknown Docgettr User in OAuth state", frappe.AuthenticationError)
+    return frappe.get_doc("Docgettr User", user_name)
+
+
+def _app_url() -> str:
+    return (_settings.get("app_url") or "").rstrip("/")
+
+
+def _redirect_to_app(path: str) -> None:
+    """Issue a 302 to the Next.js frontend (a top-level browser navigation)."""
+    frappe.local.response["type"] = "redirect"
+    frappe.local.response["location"] = f"{_app_url()}{path}"
 
 
 # ---------------------------------------------------------------------------
@@ -112,42 +160,56 @@ def get_auth_url():
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
-        state=user.name,
+        state=_make_state(user.name),
     )
     return {"auth_url": auth_url, "state": state}
 
 
-@frappe.whitelist()
-def handle_callback(code, state):
-    """Exchange auth code for tokens; store encrypted on the user."""
+@frappe.whitelist(allow_guest=True)
+def handle_callback(code=None, state=None, error=None, **kwargs):
+    """Google OAuth redirect target.
+
+    This is a top-level browser navigation back from Google to the Frappe
+    domain, so there is NO Docgettr session here — the user is identified from
+    the signed `state` param, not from the session. On completion we 302 the
+    browser back to the frontend rather than returning JSON.
+    """
     from google_auth_oauthlib.flow import Flow
-    user = require_current_docgettr_user()
-    if state != user.name:
-        frappe.throw("OAuth state mismatch", frappe.AuthenticationError)
 
-    flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
-    flow.redirect_uri = _settings.get("google_redirect_uri")
-    flow.fetch_token(code=code)
-    creds = flow.credentials
+    # User denied consent (or Google returned an error).
+    if error or not code:
+        return _redirect_to_app("/settings/storage?drive=error")
 
-    user.drive_access_token = creds.token
-    if creds.refresh_token:
-        user.drive_refresh_token = creds.refresh_token
-    if creds.expiry:
-        user.drive_token_expiry = creds.expiry
-    user.save(ignore_permissions=True)
-
-    # Bootstrap the Docgettr root folder so subsequent syncs are fast
     try:
-        service = _get_drive_service(user)
-        root_id = _ensure_folder(service, _root_folder_name())
-        user.drive_root_folder_id = root_id
-        user.save(ignore_permissions=True)
-    except Exception:
-        frappe.log_error(message=frappe.get_traceback(), title="Drive bootstrap failed")
+        user = _user_from_state(state)
 
-    append_audit(user.name, "DriveConnected", "Docgettr User", user.name)
-    return {"status": "connected"}
+        flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
+        flow.redirect_uri = _settings.get("google_redirect_uri")
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+
+        user.drive_access_token = creds.token
+        if creds.refresh_token:
+            user.drive_refresh_token = creds.refresh_token
+        if creds.expiry:
+            user.drive_token_expiry = creds.expiry
+        user.save(ignore_permissions=True)
+
+        # Bootstrap the Docgettr root folder so subsequent syncs are fast
+        try:
+            service = _get_drive_service(user)
+            root_id = _ensure_folder(service, _root_folder_name())
+            user.drive_root_folder_id = root_id
+            user.save(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(message=frappe.get_traceback(), title="Drive bootstrap failed")
+
+        append_audit(user.name, "DriveConnected", "Docgettr User", user.name)
+    except Exception:
+        frappe.log_error(message=frappe.get_traceback(), title="Drive OAuth callback failed")
+        return _redirect_to_app("/settings/storage?drive=error")
+
+    return _redirect_to_app("/settings/storage?drive=connected")
 
 
 @frappe.whitelist()
