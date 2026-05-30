@@ -2,6 +2,7 @@
 out of the browser."""
 
 import json
+import mimetypes
 import re
 
 import frappe
@@ -70,7 +71,10 @@ def _get_file_bytes(file_url: str):
     if not file_name:
         frappe.throw(f"File not found: {file_url}")
     file_doc = frappe.get_doc("File", file_name)
-    return file_doc.get_content(), file_doc.content_type
+    # The Frappe File doctype has no content_type field; derive it from the name.
+    name = file_doc.file_name or file_doc.file_url
+    mime = (mimetypes.guess_type(name)[0] if name else None) or "application/octet-stream"
+    return file_doc.get_content(), mime
 
 
 def _gemini_model(model_name: str = None):

@@ -1,6 +1,7 @@
 """Document CRUD endpoints."""
 
 import json
+import mimetypes
 
 import frappe
 from frappe.utils.file_manager import save_file, get_file
@@ -28,6 +29,12 @@ def _get_uploaded_file_bytes():
         return None, None, None
     content = fileobj.stream.read()
     return content, fileobj.filename, fileobj.mimetype
+
+
+def _guess_mime(file_doc, fallback_name=None) -> str:
+    """Best-effort MIME type for a Frappe File (which has no content_type field)."""
+    name = getattr(file_doc, "file_name", None) or file_doc.file_url or fallback_name
+    return (mimetypes.guess_type(name)[0] if name else None) or "application/octet-stream"
 
 
 def _serialize(doc) -> dict:
@@ -84,7 +91,7 @@ def upload(document_type=None, category=None, family=None, belongs_to_member=Non
         "display_filename": display_filename or fname,
         "original_filename": fname,
         "file_attachment": file_doc.file_url,
-        "mime_type": mime or file_doc.content_type,
+        "mime_type": mime or _guess_mime(file_doc, fname),
         "file_size_bytes": len(content),
         "storage_backend": user.storage_backend or "CloudVault",
         "tags_json": tags or "[]",
@@ -265,7 +272,7 @@ def replace_file(name):
     )
 
     doc.file_attachment = file_doc.file_url
-    doc.mime_type = mime or file_doc.content_type
+    doc.mime_type = mime or _guess_mime(file_doc, fname)
     doc.file_size_bytes = len(content)
     doc.original_filename = fname
     doc.version_no = (doc.version_no or 1) + 1
