@@ -27,6 +27,21 @@ def _user_can_access_family(user_name: str, family_name: str) -> bool:
     ))
 
 
+def _invite_dict(row):
+    """Enrich a raw invite row/doc with the family + user names the UI needs."""
+    d = row.as_dict() if hasattr(row, "as_dict") else dict(row)
+    invited = frappe.db.get_value(
+        "Docgettr User", d.get("invited_user"),
+        ["display_name", "avatar_seed", "user"], as_dict=True,
+    ) or {}
+    d["family_name"] = frappe.db.get_value("Docgettr Family", d.get("family"), "family_name")
+    d["inviter_display_name"] = frappe.db.get_value("Docgettr User", d.get("inviter"), "display_name")
+    d["invited_display_name"] = invited.get("display_name")
+    d["invited_avatar_seed"] = invited.get("avatar_seed")
+    d["invited_email"] = invited.get("user")
+    return d
+
+
 @frappe.whitelist()
 def create(family_name, cover_emoji=None):
     user = require_current_docgettr_user()
@@ -199,4 +214,147 @@ def remove_member(member_id):
     append_audit(actor.name, "FamilyMemberRemoved", "Docgettr Family Member", member_id,
                  context={"family": member.family})
     frappe.delete_doc("Docgettr Family Member", member_id, ignore_permissions=True)
+    return {"status": "ok"}
+
+
+# ───────── Linked-member invitations (consent flow) ─────────
+#
+# A Linked member is a real account, so they aren't dropped into a family
+# silently: the admin sends an invitation, and the person only becomes a member
+# once they accept it themselves.
+
+@frappe.whitelist()
+def invite_member(family, invited_email, role="Editor", display_name=None):
+    actor = require_current_docgettr_user()
+    keeper = frappe.db.get_value("Docgettr Family", family, "keeper_user")
+    if not _is_family_admin(actor.name, family) and actor.name != keeper:
+        frappe.throw("Only family admins can invite members", frappe.PermissionError)
+
+    invited_email = (invited_email or "").strip().lower()
+    invited = frappe.db.get_value(
+        "Docgettr User", {"user": invited_email},
+        ["name", "display_name"], as_dict=True,
+    )
+    if not invited:
+        frappe.throw("No Docgettr account uses that email.")
+    if invited.name == actor.name:
+        frappe.throw("You can't invite yourself.")
+    if invited.name == keeper or frappe.db.exists(
+        "Docgettr Family Member", {"family": family, "user": invited.name}
+    ):
+        frappe.throw("That person is already a member of this family.")
+    if frappe.db.exists(
+        "Docgettr Family Invite",
+        {"family": family, "invited_user": invited.name, "status": "Pending"},
+    ):
+        frappe.throw("An invitation is already pending for that person.")
+
+    invite = frappe.get_doc({
+        "doctype": "Docgettr Family Invite",
+        "family": family,
+        "inviter": actor.name,
+        "invited_user": invited.name,
+        "role": role,
+        "display_name": display_name or (invited.display_name or "").split(" ")[0],
+        "status": "Pending",
+    }).insert(ignore_permissions=True)
+
+    append_audit(actor.name, "FamilyInviteSent", "Docgettr Family Invite", invite.name,
+                 context={"family": family, "invited_user": invited.name, "role": role})
+    return {"invite": _invite_dict(invite)}
+
+
+@frappe.whitelist()
+def list_my_invites():
+    """Pending invitations addressed to the current user."""
+    actor = require_current_docgettr_user()
+    rows = frappe.get_all(
+        "Docgettr Family Invite",
+        filters={"invited_user": actor.name, "status": "Pending"},
+        fields=["*"],
+        order_by="creation desc",
+    )
+    return {"invites": [_invite_dict(r) for r in rows]}
+
+
+@frappe.whitelist()
+def list_family_invites(family):
+    """Pending invitations sent for a family (visible to its members)."""
+    actor = require_current_docgettr_user()
+    if not _user_can_access_family(actor.name, family):
+        frappe.throw("Not authorized", frappe.PermissionError)
+    rows = frappe.get_all(
+        "Docgettr Family Invite",
+        filters={"family": family, "status": "Pending"},
+        fields=["*"],
+        order_by="creation desc",
+    )
+    return {"invites": [_invite_dict(r) for r in rows]}
+
+
+@frappe.whitelist()
+def accept_invite(invite_id):
+    actor = require_current_docgettr_user()
+    invite = frappe.get_doc("Docgettr Family Invite", invite_id)
+    if invite.invited_user != actor.name:
+        frappe.throw("This invitation isn't addressed to you.", frappe.PermissionError)
+    if invite.status != "Pending":
+        frappe.throw("This invitation is no longer pending.")
+
+    member = None
+    if not frappe.db.exists(
+        "Docgettr Family Member", {"family": invite.family, "user": actor.name}
+    ):
+        member = frappe.get_doc({
+            "doctype": "Docgettr Family Member",
+            "family": invite.family,
+            "user": actor.name,
+            "kind": "Linked",
+            "role": invite.role,
+            "display_name": invite.display_name or (actor.display_name or "").split(" ")[0],
+            "relationship": "Other",
+            "avatar_seed": actor.avatar_seed,
+        }).insert(ignore_permissions=True)
+        append_audit(actor.name, "FamilyMemberAdded", "Docgettr Family Member", member.name,
+                     context={"family": invite.family, "kind": "Linked", "via_invite": invite.name})
+
+    invite.status = "Accepted"
+    invite.responded_at = frappe.utils.now_datetime()
+    invite.save(ignore_permissions=True)
+    append_audit(actor.name, "FamilyInviteAccepted", "Docgettr Family Invite", invite.name,
+                 context={"family": invite.family})
+    return {"member": member.as_dict() if member else None, "invite": _invite_dict(invite)}
+
+
+@frappe.whitelist()
+def decline_invite(invite_id):
+    actor = require_current_docgettr_user()
+    invite = frappe.get_doc("Docgettr Family Invite", invite_id)
+    if invite.invited_user != actor.name:
+        frappe.throw("This invitation isn't addressed to you.", frappe.PermissionError)
+    if invite.status != "Pending":
+        frappe.throw("This invitation is no longer pending.")
+    invite.status = "Declined"
+    invite.responded_at = frappe.utils.now_datetime()
+    invite.save(ignore_permissions=True)
+    append_audit(actor.name, "FamilyInviteDeclined", "Docgettr Family Invite", invite.name,
+                 context={"family": invite.family})
+    return {"status": "ok"}
+
+
+@frappe.whitelist()
+def revoke_invite(invite_id):
+    actor = require_current_docgettr_user()
+    invite = frappe.get_doc("Docgettr Family Invite", invite_id)
+    keeper = frappe.db.get_value("Docgettr Family", invite.family, "keeper_user")
+    if actor.name != invite.inviter and not _is_family_admin(actor.name, invite.family) \
+            and actor.name != keeper:
+        frappe.throw("Only the inviter or a family admin can revoke this.", frappe.PermissionError)
+    if invite.status != "Pending":
+        frappe.throw("This invitation is no longer pending.")
+    invite.status = "Revoked"
+    invite.responded_at = frappe.utils.now_datetime()
+    invite.save(ignore_permissions=True)
+    append_audit(actor.name, "FamilyInviteRevoked", "Docgettr Family Invite", invite.name,
+                 context={"family": invite.family, "invited_user": invite.invited_user})
     return {"status": "ok"}
