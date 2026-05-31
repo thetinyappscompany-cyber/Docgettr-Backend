@@ -298,7 +298,10 @@ def google_login(code, redirect_uri):
     append_audit(dg_user.name, "GoogleSignup" if created else "GoogleLogin",
                  "Docgettr User", dg_user.name)
     frappe.db.commit()
-    return {"user": dg_user.as_dict(), "created": created}
+    # Return the session id in the body too: the frontend callback is a redirect,
+    # and relying solely on the Set-Cookie header surviving a server-to-server
+    # fetch + redirect is fragile. The explicit sid is the reliable source.
+    return {"user": dg_user.as_dict(), "created": created, "sid": frappe.session.sid}
 
 
 @frappe.whitelist()
