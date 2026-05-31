@@ -10,6 +10,11 @@ class DocgettrUser(Document):
             self.name = generate_id("usr")
 
     def validate(self):
+        # Store a blank phone as NULL so the unique index allows many
+        # phone-less accounts (MySQL treats NULLs as distinct, "" as equal).
+        if not (self.phone or "").strip():
+            self.phone = None
+
         # Sync display name to Frappe User
         if self.user and self.has_value_changed("display_name"):
             try:

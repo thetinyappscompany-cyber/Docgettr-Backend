@@ -8,6 +8,7 @@ from docgettr.docgettr.utils.permissions import (
     append_audit,
 )
 from docgettr.docgettr.utils import settings as _settings
+from docgettr.docgettr.api import otp as _otp
 
 
 # Scopes requested for "Sign in with Google" — just enough to identify the user.
@@ -66,12 +67,33 @@ def _provision_account(email, display_name, password=None, phone=None,
     return dg_user
 
 
+def _assert_phone_available(phone, exclude_user=None):
+    """Ensure a normalized phone isn't already linked to another account."""
+    if not phone:
+        return
+    existing = frappe.db.get_value("Docgettr User", {"phone": phone}, "user")
+    if existing and existing != exclude_user:
+        frappe.throw("This mobile number is already linked to another account.",
+                     frappe.DuplicateEntryError)
+
+
 @frappe.whitelist(allow_guest=True)
-def signup(email, password, display_name, phone=None, mode="Individual",
-           language_pref="en"):
-    """Create a new Docgettr user with a linked Frappe User and a Free subscription."""
+def signup(email, password, display_name, verification_token, phone=None,
+           mode="Individual", language_pref="en"):
+    """Create a new Docgettr user with a linked Frappe User and a Free subscription.
+
+    The email must have been verified via the OTP flow first — `verification_token`
+    is the single-use token returned by `otp.verify_otp` for the `Signup` purpose.
+    """
+    email = _otp.normalize_email(email)
+    phone = _otp.normalize_phone(phone) or None
+
     if frappe.db.exists("User", email):
         frappe.throw("An account with this email already exists.", frappe.DuplicateEntryError)
+
+    # Proves the user controls this email address.
+    _otp.consume_verification(email, "Signup", verification_token)
+    _assert_phone_available(phone)
 
     dg_user = _provision_account(
         email=email,
@@ -90,9 +112,30 @@ def signup(email, password, display_name, phone=None, mode="Individual",
     return {"user": dg_user.as_dict()}
 
 
+def _resolve_login_email(identifier):
+    """Map a login identifier (email or mobile number) to a Frappe User email."""
+    identifier = (identifier or "").strip()
+    if not identifier:
+        frappe.throw("Enter your email or mobile number.", frappe.AuthenticationError)
+    if _otp.looks_like_email(identifier):
+        return _otp.normalize_email(identifier)
+    # Treat as a phone number → look up the linked account.
+    phone = _otp.normalize_phone(identifier)
+    email = frappe.db.get_value("Docgettr User", {"phone": phone}, "user")
+    if not email:
+        # Same generic error as a bad password — don't reveal which phones exist.
+        frappe.throw("Invalid login credentials.", frappe.AuthenticationError)
+    return email
+
+
 @frappe.whitelist(allow_guest=True)
-def login(email, password):
-    """Authenticate and return the Docgettr User profile."""
+def login(password, identifier=None, email=None):
+    """Authenticate with an email *or* mobile number + password.
+
+    `identifier` accepts either; `email` is kept for backward compatibility.
+    """
+    email = _resolve_login_email(identifier or email)
+
     from frappe.auth import LoginManager
     lm = LoginManager()
     lm.authenticate(user=email, pwd=password)
@@ -108,6 +151,41 @@ def login(email, password):
 @frappe.whitelist()
 def logout():
     frappe.local.login_manager.logout()
+    return {"status": "ok"}
+
+
+@frappe.whitelist(allow_guest=True)
+def reset_password(destination, verification_token, new_password):
+    """Set a new password after verifying an OTP (`Reset` purpose).
+
+    `destination` is the email or mobile number the user requested the reset
+    for; `verification_token` comes from `otp.verify_otp`.
+    """
+    _otp.consume_verification(destination, "Reset", verification_token)
+    email = _resolve_login_email(destination)
+
+    from frappe.utils.password import update_password as _update_password
+    _update_password(email, new_password)
+
+    append_audit(
+        frappe.db.get_value("Docgettr User", {"user": email}, "name"),
+        "PasswordReset", "User", email,
+    )
+    frappe.db.commit()
+    return {"status": "ok"}
+
+
+@frappe.whitelist()
+def set_password(new_password):
+    """Set / change the password for the logged-in user.
+
+    Primarily for accounts created via Google sign-in, which start with a
+    random password the user never knows.
+    """
+    user = require_current_docgettr_user()
+    from frappe.utils.password import update_password as _update_password
+    _update_password(user.user, new_password)
+    append_audit(user.name, "PasswordSet", "User", user.user)
     return {"status": "ok"}
 
 
@@ -236,7 +314,39 @@ def get_current_user():
     user_dict["drive_connected"] = bool(
         user.get_password("drive_access_token", raise_exception=False)
     )
+    # A profile is "complete" once we have a mobile number on file. Google
+    # sign-ups land here without one and must finish setup at /welcome.
+    user_dict["profile_complete"] = bool(user.phone)
     return {"user": user_dict, "subscription": sub}
+
+
+@frappe.whitelist()
+def complete_profile(phone, password=None, display_name=None, mode=None):
+    """Finish setup for an account that signed up via Google.
+
+    Adds the mobile number (a required login identity) and, optionally, lets
+    the user set a real password instead of the random one Google accounts get.
+    """
+    user = require_current_docgettr_user()
+    phone = _otp.normalize_phone(phone) or None
+    if not phone:
+        frappe.throw("A mobile number is required.")
+    _assert_phone_available(phone, exclude_user=user.user)
+
+    user.phone = phone
+    if display_name:
+        user.display_name = display_name
+    if mode:
+        user.mode = mode
+    user.save(ignore_permissions=True)
+
+    if password:
+        from frappe.utils.password import update_password as _update_password
+        _update_password(user.user, password)
+
+    append_audit(user.name, "ProfileCompleted", "Docgettr User", user.name)
+    frappe.db.commit()
+    return {"user": user.as_dict()}
 
 
 @frappe.whitelist()
@@ -245,7 +355,10 @@ def update_profile(display_name=None, phone=None, mode=None, language_pref=None,
     """Update the current Docgettr User's profile fields."""
     user = require_current_docgettr_user()
     if display_name is not None: user.display_name = display_name
-    if phone is not None: user.phone = phone
+    if phone is not None:
+        phone = _otp.normalize_phone(phone) or None
+        _assert_phone_available(phone, exclude_user=user.user)
+        user.phone = phone
     if mode is not None: user.mode = mode
     if language_pref is not None: user.language_pref = language_pref
     if avatar_seed is not None: user.avatar_seed = avatar_seed

@@ -1,0 +1,4 @@
+[pre_model_sync]
+docgettr.patches.normalize_user_phones
+
+[post_model_sync]

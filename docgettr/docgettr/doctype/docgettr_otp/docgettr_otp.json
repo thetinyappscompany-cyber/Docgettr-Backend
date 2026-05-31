@@ -1,0 +1,45 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-05-31 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "destination",
+  "delivery",
+  "channel",
+  "purpose",
+  "code_hash",
+  "verification_token",
+  "status",
+  "attempts",
+  "expires_at"
+ ],
+ "fields": [
+  {"fieldname": "destination", "label": "Destination", "fieldtype": "Data", "reqd": 1, "in_list_view": 1, "description": "The email or phone the user typed (normalized). Used for matching."},
+  {"fieldname": "delivery", "label": "Delivered To", "fieldtype": "Data", "description": "The address the code was actually sent to (resolved email in phase 1)."},
+  {"fieldname": "channel", "label": "Channel", "fieldtype": "Select", "options": "Email\nSMS", "default": "Email", "in_list_view": 1},
+  {"fieldname": "purpose", "label": "Purpose", "fieldtype": "Select", "options": "Signup\nReset", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "code_hash", "label": "Code Hash", "fieldtype": "Data", "read_only": 1},
+  {"fieldname": "verification_token", "label": "Verification Token", "fieldtype": "Data", "read_only": 1},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Pending\nVerified\nConsumed", "default": "Pending", "in_list_view": 1},
+  {"fieldname": "attempts", "label": "Attempts", "fieldtype": "Int", "default": "0"},
+  {"fieldname": "expires_at", "label": "Expires At", "fieldtype": "Datetime"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-31 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Docgettr",
+ "name": "Docgettr OTP",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
