@@ -131,3 +131,52 @@ def resolve_link(token, password=None):
         "shared_by": shared_by_name,
         "expires_at": link_data.expires_at,
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def download_link(token, password=None):
+    """Public — stream the shared document's file for a valid token.
+
+    Lets anyone holding the link download the underlying file (not just view a
+    preview). Applies the same gate as resolve_link: the link must be Active,
+    unexpired, within its view limit, and — if protected — the password must
+    match. The file itself is private; we read it server-side only after the
+    token has been validated, so the guest never gets direct file-ACL access.
+    """
+    link_data = frappe.db.get_value(
+        "Docgettr Share Link", {"token": token},
+        ["name", "document", "created_by", "expires_at", "password_hash",
+         "max_views", "view_count", "status"],
+        as_dict=True,
+    )
+    if not link_data:
+        frappe.throw("Share link not found", frappe.DoesNotExistError)
+    if link_data.status != "Active":
+        frappe.throw("This share link is no longer active")
+    if frappe.utils.now_datetime() > frappe.utils.get_datetime(link_data.expires_at):
+        frappe.db.set_value("Docgettr Share Link", link_data.name, "status", "Expired")
+        frappe.db.commit()
+        frappe.throw("This share link has expired")
+    if link_data.max_views and link_data.view_count >= link_data.max_views:
+        frappe.throw("This share link has reached its view limit")
+
+    if link_data.password_hash:
+        if not password or not _verify_password(password, link_data.password_hash):
+            frappe.throw("Incorrect password", frappe.AuthenticationError)
+
+    doc = frappe.get_doc("Docgettr Document", link_data.document)
+    if not doc.file_attachment:
+        frappe.throw("No file attached to this document")
+
+    file_doc = frappe.get_doc("File", {"file_url": doc.file_attachment})
+    content = file_doc.get_content()
+
+    append_audit(link_data.created_by, "ShareAccessed", "Docgettr Share Link",
+                 link_data.name,
+                 context={"viewer_ip": getattr(frappe.local, "request_ip", None),
+                          "action": "download"})
+    frappe.db.commit()
+
+    frappe.local.response.filename = doc.display_filename or "document"
+    frappe.local.response.filecontent = content
+    frappe.local.response.type = "download"

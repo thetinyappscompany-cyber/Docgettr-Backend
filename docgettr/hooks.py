@@ -25,6 +25,7 @@ scheduler_events = {
         "docgettr.tasks.expire_share_links",
         "docgettr.tasks.process_account_deletions",
         "docgettr.tasks.reset_monthly_scan_counts",
+        "docgettr.tasks.purge_stale_otps",
     ],
     "weekly": [
         "docgettr.tasks.send_storage_warnings",

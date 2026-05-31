@@ -8,9 +8,19 @@ import hashlib
 import hmac
 import io
 import json
+import os
 import time
 
 import frappe
+
+# Drive consent is requested with include_granted_scopes=true (incremental
+# authorization), so once a user has signed in with Google the token Google
+# returns for the Drive grant carries the *union* of the Drive scopes and the
+# previously granted login scopes (openid/email/profile). Without this flag
+# oauthlib treats that broader scope set as a mismatch and raises
+# "Scope has changed ...", which aborts fetch_token() and the token refresh,
+# making Drive impossible to connect even after the user approves everything.
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 from docgettr.docgettr.utils.permissions import (
     require_current_docgettr_user,

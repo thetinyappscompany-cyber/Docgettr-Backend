@@ -9,6 +9,7 @@
   "user",
   "display_name",
   "phone",
+  "phone_verified",
   "avatar_seed",
   "mode",
   "language_pref",
@@ -27,7 +28,8 @@
  "fields": [
   {"fieldname": "user", "label": "Frappe User", "fieldtype": "Link", "options": "User", "reqd": 1, "unique": 1},
   {"fieldname": "display_name", "label": "Display Name", "fieldtype": "Data", "reqd": 1},
-  {"fieldname": "phone", "label": "Phone", "fieldtype": "Data"},
+  {"fieldname": "phone", "label": "Phone", "fieldtype": "Data", "unique": 1, "search_index": 1},
+  {"fieldname": "phone_verified", "label": "Phone Verified", "fieldtype": "Check", "default": "0"},
   {"fieldname": "avatar_seed", "label": "Avatar Seed", "fieldtype": "Data"},
   {"fieldname": "mode", "label": "Mode", "fieldtype": "Select", "options": "Keeper\nIndividual\nBoth", "default": "Individual", "reqd": 1},
   {"fieldname": "language_pref", "label": "Language", "fieldtype": "Select", "options": "en\nhi\ngu", "default": "en", "reqd": 1},

@@ -265,3 +265,14 @@ def wipe_account(docgettr_user_name: str):
             pass
 
     frappe.db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Daily — OTP housekeeping
+# ---------------------------------------------------------------------------
+
+def purge_stale_otps():
+    """Delete OTP rows older than a day (expired, consumed, or abandoned)."""
+    cutoff = frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-1)
+    frappe.db.delete("Docgettr OTP", {"creation": ("<", cutoff)})
+    frappe.db.commit()
