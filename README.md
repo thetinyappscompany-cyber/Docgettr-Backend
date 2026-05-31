@@ -86,12 +86,20 @@ POST  https://<site>/api/method/docgettr.docgettr.api.<module>.<function>
 ```
 
 ### `auth`
-- `signup(email, password, display_name, phone?, mode?, language_pref?)` — guest
-- `login(email, password)` — guest
+- `signup(email, password, display_name, verification_token, phone?, mode?, language_pref?)` — guest; `verification_token` from `otp.verify_otp` (Signup) proves email ownership
+- `login(password, identifier?, email?)` — guest; `identifier` accepts an email **or** mobile number
+- `google_login_url(redirect_uri, state)` / `google_login(code, redirect_uri)` — guest; Sign in with Google
+- `complete_profile(phone, password?, display_name?, mode?)` — finishes Google sign-ups (adds mobile, optional password)
+- `reset_password(destination, verification_token, new_password)` — guest; OTP-based (Reset)
+- `set_password(new_password)` — change password for the logged-in user
 - `logout()`
-- `get_current_user()`
+- `get_current_user()` — also returns `profile_complete` (false until a mobile is on file)
 - `update_profile(display_name?, phone?, mode?, language_pref?, avatar_seed?, default_family?, storage_backend?)`
 - `delete_account()` — immediate wipe (admin/testing)
+
+### `otp`
+- `request_otp(destination, purpose)` — guest; `purpose` ∈ {`Signup`, `Reset`}. Phase 1 delivers codes by **email** (phone destinations resolve to the account's email); SMS is wired but inert until an SMS gateway is configured in Docgettr Settings.
+- `verify_otp(destination, code, purpose)` — guest; returns a single-use `verification_token`
 
 ### `documents`
 - `upload(...)` — multipart `file` field required
