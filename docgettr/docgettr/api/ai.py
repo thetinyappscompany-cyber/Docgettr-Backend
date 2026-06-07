@@ -90,6 +90,37 @@ def _gemini_model(model_name: str = None):
     return genai.GenerativeModel(model)
 
 
+def _generate(prompt: str, file_part: dict):
+    """Generate a JSON response from Gemini, retrying on the fallback model.
+
+    The primary model can fail transiently (quota, 5xx) or permanently (a model
+    name that Google has retired). Rather than bubble the first error straight
+    to the user, try the configured fallback model before giving up so AI keeps
+    working across model deprecations.
+    """
+    gen_config = {"temperature": 0.1, "response_mime_type": "application/json"}
+    candidates = [
+        _settings.get("gemini_model_primary"),
+        _settings.get("gemini_model_fallback"),
+    ]
+    seen = []
+    last_exc = None
+    for name in candidates:
+        if not name or name in seen:
+            continue
+        seen.append(name)
+        try:
+            model = _gemini_model(name)
+            return model.generate_content([prompt, file_part], generation_config=gen_config)
+        except Exception as exc:  # noqa: BLE001 — log and try the next model
+            last_exc = exc
+            frappe.log_error(
+                message=frappe.get_traceback(),
+                title=f"Gemini generate failed ({name})",
+            )
+    raise last_exc or Exception("No Gemini model is configured")
+
+
 def _parse_json_response(text: str) -> dict:
     """Strip fences and parse a Gemini JSON-mode response defensively."""
     if not text:
@@ -129,21 +160,14 @@ def classify(document_name):
     _enforce_and_increment_scan(user)
 
     file_bytes, mime = _get_file_bytes(doc.file_attachment)
+    file_part = {"mime_type": mime, "data": file_bytes}
     catalogue = _load_catalogue()
 
     # ---- Phase 1: classification ----
-    model = _gemini_model()
     classify_prompt = build_master_classify_prompt(catalogue)
     try:
-        response = model.generate_content(
-            [classify_prompt, {"mime_type": mime, "data": file_bytes}],
-            generation_config={
-                "temperature": 0.1,
-                "response_mime_type": "application/json",
-            },
-        )
+        response = _generate(classify_prompt, file_part)
     except Exception as exc:
-        frappe.log_error(message=frappe.get_traceback(), title="Gemini classify failed")
         frappe.throw(f"AI classification failed: {exc}")
 
     result = _parse_json_response(getattr(response, "text", ""))
@@ -164,13 +188,7 @@ def classify(document_name):
         doc_type = frappe.get_doc("Docgettr Document Type", doc.document_type)
         extract_prompt = build_extraction_prompt(doc_type)
         try:
-            extract_response = model.generate_content(
-                [extract_prompt, {"mime_type": mime, "data": file_bytes}],
-                generation_config={
-                    "temperature": 0.1,
-                    "response_mime_type": "application/json",
-                },
-            )
+            extract_response = _generate(extract_prompt, file_part)
             extract_result = _parse_json_response(getattr(extract_response, "text", ""))
             extraction = extract_result.get("fields") or {}
             per_field_conf = extract_result.get("per_field_confidence") or {}
@@ -226,12 +244,8 @@ def extract_fields(document_name):
 
     file_bytes, mime = _get_file_bytes(doc.file_attachment)
     doc_type = frappe.get_doc("Docgettr Document Type", doc.document_type)
-    model = _gemini_model()
     prompt = build_extraction_prompt(doc_type)
-    response = model.generate_content(
-        [prompt, {"mime_type": mime, "data": file_bytes}],
-        generation_config={"temperature": 0.1, "response_mime_type": "application/json"},
-    )
+    response = _generate(prompt, {"mime_type": mime, "data": file_bytes})
     result = _parse_json_response(getattr(response, "text", ""))
     fields = result.get("fields") or {}
     per_field = result.get("per_field_confidence") or {}
@@ -262,11 +276,7 @@ def reclassify(document_name, rejected_type):
     file_bytes, mime = _get_file_bytes(doc.file_attachment)
     catalogue = _load_catalogue()
     prompt = build_reclassify_prompt(catalogue, rejected_type)
-    model = _gemini_model()
-    response = model.generate_content(
-        [prompt, {"mime_type": mime, "data": file_bytes}],
-        generation_config={"temperature": 0.1, "response_mime_type": "application/json"},
-    )
+    response = _generate(prompt, {"mime_type": mime, "data": file_bytes})
     result = _parse_json_response(getattr(response, "text", ""))
     doc.document_type = result.get("document_type_id") or None
     doc.ai_confidence_overall = float(result.get("overall_confidence") or 0)
