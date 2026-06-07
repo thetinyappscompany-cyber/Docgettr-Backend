@@ -20,9 +20,10 @@ import frappe
 # ---------------------------------------------------------------------------
 
 DEFAULTS = {
-    # AI / Gemini
-    "gemini_model_primary": "gemini-2.0-flash",
-    "gemini_model_fallback": "gemini-1.5-flash",
+    # AI / Gemini. Keep these on current GA models — older 1.5 models were
+    # retired by Google in 2025 and now 404 at the API.
+    "gemini_model_primary": "gemini-2.5-flash",
+    "gemini_model_fallback": "gemini-2.0-flash",
     "ai_confidence_threshold": 0.65,
     "drive_root_folder_name": "Docgettr",
 
