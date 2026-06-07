@@ -1,6 +1,18 @@
 """Authentication endpoints — wrap Frappe's auth + Docgettr User profile."""
 
+import os
+
 import frappe
+
+# "Sign in with Google" requests openid/email/profile, but Google echoes the
+# granted scopes back normalized and reordered (e.g. the bare "openid email
+# profile" aliases, in a different order). oauthlib's fetch_token() treats that
+# as a scope mismatch and raises "Scope has changed from ...", which aborts the
+# token exchange and makes Google sign-in fail. Relaxing the check tolerates the
+# normalization. drive.py sets the same flag, but that only takes effect if the
+# drive module happens to be imported first in a given worker — set it here too
+# so Google sign-in works regardless of import order.
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 from docgettr.docgettr.utils.permissions import (
     get_current_docgettr_user,

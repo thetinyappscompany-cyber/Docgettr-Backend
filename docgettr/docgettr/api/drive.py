@@ -151,6 +151,14 @@ def _get_drive_service(user):
     client_id = _settings.get("google_client_id")
     client_secret = _settings.get("google_client_secret")
 
+    # Pass the stored expiry so google-auth knows when the access token is stale.
+    # Without it, `expiry` is None → creds.valid is always True → the refresh
+    # branch below never fires, and Drive calls start 401ing ~an hour after the
+    # user connects (when the access token expires) with no recovery.
+    expiry = user.drive_token_expiry
+    if isinstance(expiry, str):
+        expiry = frappe.utils.get_datetime(expiry)
+
     creds = Credentials(
         token=access,
         refresh_token=refresh,
@@ -158,12 +166,15 @@ def _get_drive_service(user):
         client_id=client_id,
         client_secret=client_secret,
         scopes=GOOGLE_DRIVE_SCOPES,
+        expiry=expiry,
     )
     if not creds.valid and creds.refresh_token:
         from google.auth.transport.requests import Request
         creds.refresh(Request())
-        # Persist refreshed access token
+        # Persist the refreshed access token and its new expiry.
         user.drive_access_token = creds.token
+        if creds.expiry:
+            user.drive_token_expiry = creds.expiry
         user.save(ignore_permissions=True)
 
     return build("drive", "v3", credentials=creds, cache_discovery=False)
