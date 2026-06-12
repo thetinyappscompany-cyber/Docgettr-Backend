@@ -238,6 +238,30 @@ def _google_client_config(redirect_uri):
     }
 
 
+def _google_flow(redirect_uri):
+    """Build the OAuth Flow for sign-in.
+
+    The consent URL and the token exchange are two *separate* HTTP requests
+    (google_login_url then google_login), each with its own Flow instance. With
+    PKCE on (the library default, autogenerate_code_verifier=True), the consent
+    step would generate a code_verifier and send its code_challenge to Google,
+    but the token-exchange Flow — a fresh instance — has no verifier to send, so
+    Google rejects fetch_token with "invalid_grant: Missing code verifier".
+    This is a confidential web client (it authenticates with client_secret), so
+    PKCE is redundant: disable verifier auto-generation to keep both steps
+    consistent.
+    """
+    from google_auth_oauthlib.flow import Flow
+
+    flow = Flow.from_client_config(
+        _google_client_config(redirect_uri),
+        scopes=GOOGLE_LOGIN_SCOPES,
+        autogenerate_code_verifier=False,
+    )
+    flow.redirect_uri = redirect_uri
+    return flow
+
+
 @frappe.whitelist(allow_guest=True)
 def google_login_url(redirect_uri, state):
     """Return the Google consent URL for "Sign in with Google".
@@ -245,12 +269,7 @@ def google_login_url(redirect_uri, state):
     `redirect_uri` is the frontend OAuth callback; `state` is an opaque,
     frontend-generated CSRF token that Google echoes back unchanged.
     """
-    from google_auth_oauthlib.flow import Flow
-
-    flow = Flow.from_client_config(
-        _google_client_config(redirect_uri), scopes=GOOGLE_LOGIN_SCOPES,
-    )
-    flow.redirect_uri = redirect_uri
+    flow = _google_flow(redirect_uri)
     auth_url, _ = flow.authorization_url(
         access_type="online",
         include_granted_scopes="false",
@@ -263,14 +282,10 @@ def google_login_url(redirect_uri, state):
 @frappe.whitelist(allow_guest=True)
 def google_login(code, redirect_uri):
     """Exchange a Google auth code, then log in (creating the account if new)."""
-    from google_auth_oauthlib.flow import Flow
     from google.oauth2 import id_token as google_id_token
     from google.auth.transport import requests as google_requests
 
-    flow = Flow.from_client_config(
-        _google_client_config(redirect_uri), scopes=GOOGLE_LOGIN_SCOPES,
-    )
-    flow.redirect_uri = redirect_uri
+    flow = _google_flow(redirect_uri)
     flow.fetch_token(code=code)
     creds = flow.credentials
 
