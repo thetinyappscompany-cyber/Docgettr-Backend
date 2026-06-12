@@ -206,7 +206,15 @@ def _ensure_folder(service, name: str, parent_id: str = None) -> str:
 def get_auth_url():
     from google_auth_oauthlib.flow import Flow
     user = require_current_docgettr_user()
-    flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
+    # autogenerate_code_verifier=False: get_auth_url and handle_callback are two
+    # separate requests with separate Flow instances. With PKCE on (the library
+    # default) the consent step would send a code_challenge the callback Flow
+    # can't match, and Google rejects fetch_token with "Missing code verifier".
+    # This is a confidential client (client_secret), so PKCE is redundant.
+    flow = Flow.from_client_config(
+        _client_config(), scopes=GOOGLE_DRIVE_SCOPES,
+        autogenerate_code_verifier=False,
+    )
     flow.redirect_uri = _settings.get("google_redirect_uri")
     auth_url, state = flow.authorization_url(
         access_type="offline",
@@ -235,7 +243,12 @@ def handle_callback(code=None, state=None, error=None, **kwargs):
     try:
         user = _user_from_state(state)
 
-        flow = Flow.from_client_config(_client_config(), scopes=GOOGLE_DRIVE_SCOPES)
+        # Must match get_auth_url: PKCE off (confidential client) so the two
+        # separate-request Flows stay consistent. See get_auth_url for details.
+        flow = Flow.from_client_config(
+            _client_config(), scopes=GOOGLE_DRIVE_SCOPES,
+            autogenerate_code_verifier=False,
+        )
         flow.redirect_uri = _settings.get("google_redirect_uri")
         flow.fetch_token(code=code)
         creds = flow.credentials
